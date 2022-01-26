@@ -11,7 +11,8 @@ it('transition to done for http requests', (done) => {
   const httpRequestMachine = createLiveViewComponentMachine(
     {
       requestType: RequestType.http,
-      liveViewComponent: new TestLiveViewComponent()
+      liveViewComponent: new TestLiveViewComponent(),
+      phxSocket: { id: '123', connected: false },
     }
   )
 
@@ -29,7 +30,8 @@ it('transition to handleEvents for websocket connections', (done) => {
   const httpRequestMachine = createLiveViewComponentMachine(
     {
       requestType: RequestType.websocket,
-      liveViewComponent: new TestLiveViewComponent()
+      liveViewComponent: new TestLiveViewComponent(),
+      phxSocket: { id: '123', connected: true },
     }
   )
 

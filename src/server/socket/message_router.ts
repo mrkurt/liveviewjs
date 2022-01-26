@@ -8,7 +8,6 @@ import { LiveViewRouter } from '../types';
 import jwt from 'jsonwebtoken';
 
 export function onMessage(ws: WebSocket, message: WebSocket.RawData, topicToPath: { [key: string]: string }, router: LiveViewRouter) {
-
   // get raw message to string
   const stringMsg = message.toString();
   // console.log("message", stringMsg);
@@ -30,7 +29,6 @@ export function onMessage(ws: WebSocket, message: WebSocket.RawData, topicToPath
       case "event":
         // map based on event type
         const { type } = payload as PhxClickPayload | PhxFormPayload
-        console
         switch (type) {
           case "click":
             onPhxClickEvent(ws, rawPhxMessage as PhxClickEvent, topicToPath, router);
@@ -273,7 +271,7 @@ function newPhxReply(from: PhxIncomingMessage<unknown>, payload: any): PhxReply 
 }
 
 
-function sendPhxReply(ws: WebSocket, reply: PhxOutgoingMessage<any>) {
+export function sendPhxReply(ws: WebSocket, reply: PhxOutgoingMessage<any>) {
   ws.send(JSON.stringify(reply), { binary: false }, (err: any) => {
     if (err) {
       console.error("error", err);

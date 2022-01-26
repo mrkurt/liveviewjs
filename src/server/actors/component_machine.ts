@@ -8,10 +8,10 @@ export enum RequestType {
 }
 
 export interface ComponentMachineCtx {
-  requestType: RequestType;
+  requestType: RequestType
   liveViewComponent: LiveViewComponent<any>
+  phxSocket: PhxSocket
   liveViewContext?: LiveViewContext<any>
-  phxSocket?: PhxSocket
 }
 
 export const createLiveViewComponentMachine = (context: ComponentMachineCtx) => {
@@ -21,31 +21,50 @@ export const createLiveViewComponentMachine = (context: ComponentMachineCtx) => 
     context,
     states: {
       mount: {
-        entry: ['mountComponent'],
-        on: {
-          '': [
-            { target: 'handleParams', cond: 'didMountSucceed' },
-            { target: 'error', cond: 'didMountFail' }
-          ]
+        // entry: ['mountComponent'],
+        invoke: {
+          id: 'mountComponent',
+          src: async (context, event) => {
+            console.log("mount", context, event)
+            // TODO session
+            return Promise.resolve(context.liveViewComponent.mount(context.liveViewContext, {}, context.phxSocket));
+          },
+          onDone: {
+            target: 'handleParams',
+            actions: assign({ liveViewContext: (_, event) => event.data })
+          },
+          onError: {
+            target: 'error',
+          }
         },
       },
       handleParams: {
-        entry: ['execHandleParams'],
-        on: {
-          '': [
-            { target: 'render', cond: 'didHandleParamsSucceed' },
-            { target: 'error', cond: 'didHandleParamsFail' }
-          ]
+        invoke: {
+          id: 'handleParams',
+          src: async (context, event) => {
+            console.log("handleParams", context, event)
+            // @ts-ignore
+            if (context.liveViewContext.handleParams) {
+              // @ts-ignore
+              return Promise.resolve(context.liveViewContext.handleParams(context.liveViewContext, event.data));
+            }
+            return Promise.resolve(() => { });
+          },
+          onDone: {
+            target: 'handleParams',
+            actions: assign({ liveViewContext: (context, event) => event.data ? event.data : context.liveViewContext })
+          },
+          onError: {
+            target: 'error',
+          }
         },
       },
       render: {
         entry: ['execRender'],
-        on: {
-          '': [
-            { target: 'transitionToRequestTypeLifeCycle', cond: 'didRenderSucceed' },
-            { target: 'error', cond: 'didRenderFail' }
-          ]
-        },
+        always: [
+          { target: 'transitionToRequestTypeLifeCycle', cond: 'didRenderSucceed' },
+          { target: 'error', cond: 'didRenderFail' }
+        ]
       },
       // if http request, transition to done
       // if websocket, transition to readyForEvents
@@ -76,7 +95,7 @@ export const createLiveViewComponentMachine = (context: ComponentMachineCtx) => 
         },
       },
       error: {
-
+        entry: ['handleError'],
       },
       done: {
         // cleanup
@@ -114,7 +133,10 @@ export const createLiveViewComponentMachine = (context: ComponentMachineCtx) => 
         return {
           liveViewComponent: context.liveViewComponent
         };
-      })
+      }),
+      handleError: (context, event) => {
+        console.log("error", context, event);
+      }
     },
     guards: {
       didMountSucceed: (context, event) => {

@@ -8,6 +8,7 @@ import jwt from "jsonwebtoken";
 import { onMessage } from "./socket/message_router";
 import session, { MemoryStore } from "express-session";
 import path from "path";
+import { createWebsocketRouterMachine, WebsocketRouterEvent } from "./actors/websocket_router_machine";
 
 // extend / define session interface
 declare module 'express-session' {
@@ -64,11 +65,19 @@ export class LiveViewServer {
     httpServer.on('request', app);
 
     // register websocket server ws requests
-    wsServer.on('connection', socket => {
+    wsServer.on('connection', ws => {
 
+      const websocketRouter = createWebsocketRouterMachine({ ws, router: this._router });
+      let currentState = websocketRouter.initialState;
       // handle ws messages
-      socket.on('message', message => {
-        onMessage(socket, message, this._topicToPath, this._router);
+      ws.on('message', message => {
+        const event: WebsocketRouterEvent = { type: "MESSAGE", message: JSON.parse(message.toString()) }
+        currentState = websocketRouter.transition(currentState, event);
+        console.log("currentState", currentState.value);
+        if (currentState.context.componentMachineRef) {
+          // console.log("currentState.componentMachineRef", currentState.context.componentMachineRef);
+        }
+        // onMessage(ws, message, this._topicToPath, this._router);
       });
     });
 
