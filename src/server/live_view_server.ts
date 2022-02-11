@@ -94,7 +94,7 @@ export class LiveViewServer {
       });
     });
 
-    this.httpServer.listen(this.port, () => {
+    this.httpServer.listen(this.port, '0.0.0.0', () => {
       console.log(`LiveView App is listening on port ${this.port} !`)
     })
 
